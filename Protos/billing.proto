@@ -1,0 +1,187 @@
+syntax = "proto3";
+
+package pvs.billing.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "Pvs.Billing.Grpc";
+
+service BillingService {
+  rpc CheckAccess (CheckAccessRequest) returns (CheckAccessResponse);
+  rpc GetEntitlements (GetEntitlementsRequest) returns (GetEntitlementsResponse);
+  rpc GetSubscription (GetSubscriptionRequest) returns (GetSubscriptionResponse);
+  rpc ListPlans (ListPlansRequest) returns (ListPlansResponse);
+  rpc CreateCheckout (CreateCheckoutRequest) returns (CreateCheckoutResponse);
+  rpc CancelSubscription (CancelSubscriptionRequest) returns (CancelSubscriptionResponse);
+  rpc ListInvoices (ListInvoicesRequest) returns (ListInvoicesResponse);
+  rpc EnsureCustomer (EnsureCustomerRequest) returns (EnsureCustomerResponse);
+  rpc ProcessWebhook (ProcessWebhookRequest) returns (ProcessWebhookResponse);
+
+  // Admin Methods
+  rpc GetUsersBillingState (GetUsersBillingStateRequest) returns (GetUsersBillingStateResponse);
+  rpc UpdatePlanEntitlements (UpdatePlanEntitlementsRequest) returns (UpdatePlanEntitlementsResponse);
+  rpc AdminAssignPlan (AdminAssignPlanRequest) returns (AdminAssignPlanResponse);
+}
+
+message CheckAccessRequest {
+  string user_id = 1;
+}
+
+message CheckAccessResponse {
+  bool has_access = 1;
+  string plan_code = 2;
+  string status = 3;
+  google.protobuf.Timestamp current_period_end = 4;
+}
+
+message GetEntitlementsRequest {
+  string user_id = 1;
+}
+
+message GetEntitlementsResponse {
+  string plan_code = 1;
+  map<string, string> entitlements = 2;
+}
+
+message GetSubscriptionRequest {
+  string user_id = 1;
+}
+
+message GetSubscriptionResponse {
+  Subscription subscription = 1;
+}
+
+message ListPlansRequest {
+  bool only_active = 1;
+}
+
+message ListPlansResponse {
+  repeated Plan plans = 1;
+}
+
+message CreateCheckoutRequest {
+  string user_id = 1;
+  string email = 2;
+  string plan_code = 3;
+  string provider = 4;
+  string return_url = 5;
+}
+
+message CreateCheckoutResponse {
+  string checkout_url = 1;
+  string provider_payment_id = 2;
+}
+
+message CancelSubscriptionRequest {
+  string user_id = 1;
+  bool cancel_at_period_end = 2;
+}
+
+message CancelSubscriptionResponse {
+  Subscription subscription = 1;
+}
+
+message ListInvoicesRequest {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message ListInvoicesResponse {
+  repeated Invoice invoices = 1;
+}
+
+message EnsureCustomerRequest {
+  string user_id = 1;
+  string email = 2;
+}
+
+message EnsureCustomerResponse {
+  string customer_id = 1;
+  string provider = 2;
+}
+
+message ProcessWebhookRequest {
+  string provider = 1;
+  string payload = 2;
+  string signature = 3;
+}
+
+message ProcessWebhookResponse {
+  bool processed = 1;
+}
+
+message Plan {
+  string id = 1;
+  string code = 2;
+  string name = 3;
+  string description = 4;
+  int32 price = 5;
+  string currency = 6;
+  string interval = 7;
+  bool is_active = 8;
+  bool is_default = 9;
+  int32 trial_days = 10;
+  map<string, string> entitlements = 11;
+}
+
+message Subscription {
+  string id = 1;
+  string plan_code = 2;
+  string provider = 3;
+  string status = 4;
+  google.protobuf.Timestamp current_period_start = 5;
+  google.protobuf.Timestamp current_period_end = 6;
+  google.protobuf.Timestamp trial_start = 7;
+  google.protobuf.Timestamp trial_end = 8;
+  bool cancel_at_period_end = 9;
+  google.protobuf.Timestamp canceled_at = 10;
+  google.protobuf.Timestamp created_at = 11;
+}
+
+message Invoice {
+  string id = 1;
+  string subscription_id = 2;
+  string provider = 3;
+  string provider_invoice_id = 4;
+  int32 amount_due = 5;
+  int32 amount_paid = 6;
+  string currency = 7;
+  string status = 8;
+  string invoice_pdf_url = 9;
+  google.protobuf.Timestamp paid_at = 10;
+  google.protobuf.Timestamp created_at = 11;
+}
+
+// Admin Messages
+message GetUsersBillingStateRequest {
+  repeated string user_ids = 1;
+}
+
+message UserBillingState {
+  string plan_code = 1;
+  map<string, int32> current_usage = 2;
+}
+
+message GetUsersBillingStateResponse {
+  map<string, UserBillingState> states = 1;
+}
+
+message UpdatePlanEntitlementsRequest {
+  string plan_id = 1;
+  map<string, string> entitlements = 2;
+}
+
+message UpdatePlanEntitlementsResponse {
+  Plan plan = 1;
+}
+
+// Принудительная смена плана пользователю (Admin)
+message AdminAssignPlanRequest {
+  string user_id = 1;
+  string plan_code = 2;
+}
+
+message AdminAssignPlanResponse {
+  string plan_code = 1;
+}
